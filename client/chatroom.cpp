@@ -9,6 +9,8 @@ chatroom::chatroom(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::chatroom)
     ,_regex("[48-57]")
+    ,_client(this)
+    ,_main(new chatroom_main)
 
 {
     ui->setupUi(this);
@@ -17,7 +19,7 @@ chatroom::chatroom(QWidget *parent)
     ui->lineEdit_username->installEventFilter(&_Filter);
     ui->lineEdit_password->installEventFilter(&_Filter);
     ui->lineEdit_port->installEventFilter(&_Filter);
-    ui->widget_top->installEventFilter(&_topFilter);
+    // ui->widget_top->installEventFilter(&_topFilter);
     connect(&_Filter,&UandPeventFilter::to_password,this,[&](){
         ui->lineEdit_password->setFocus();
     });
@@ -25,6 +27,17 @@ chatroom::chatroom(QWidget *parent)
         ui->lineEdit_username->setFocus();
     });
     // connect(&_topFilter,&TopwidgeteventFilter::widget_move,this,&chatroom::move_main_widget);
+    ui->register_btn->setEnabled(false);
+
+    ui->login_btn->setEnabled(false);
+    connect(&_client,&client::success_conected,this,[&](){
+        ui->register_btn->setEnabled(true);
+        ui->login_btn->setEnabled(true);
+    });
+    connect(&_client,&client::enter_main,this,[&](){
+        close();
+        _main->show();
+    });
 }
 
 void chatroom::paintEvent(QPaintEvent* Event)
@@ -47,6 +60,7 @@ void chatroom::paintEvent(QPaintEvent* Event)
 chatroom::~chatroom()
 {
     delete ui;
+    delete _main;
 
 }
 
@@ -54,7 +68,7 @@ chatroom::~chatroom()
 // {
 //     this->move(_move);
 // }
-
+//槽函数
 void chatroom::on_close_clicked()
 {
     close();
@@ -66,7 +80,36 @@ void chatroom::on_connect_btn_clicked()
     // qDebug()<<i;
     _client.setport(i);
     _client.tcp_connect();
-    ; // if(ui->lineEdit_port->)
+    QByteArray message ("/connect ");
+    _client.sendTosever(message);
+    // if(ui->lineEdit_port->)
+}
+//槽函数end
+
+//功能性函数
+
+QByteArray chatroom::getusenameandpassword ()
+{
+    QByteArray content = ui->lineEdit_username->text().toUtf8();
+    content += " " + ui->lineEdit_password->text().toUtf8();
+
+    return content;
 }
 
+
+void chatroom::on_register_btn_clicked()
+{
+    QByteArray content = getusenameandpassword();
+    content.insert(0,"/register ");
+    _client._register(content);
+}
+
+
+void chatroom::on_login_btn_clicked()
+{
+    QByteArray content = getusenameandpassword();
+    content.insert(0,"/login ");
+    _client._login(content);
+
+}
 

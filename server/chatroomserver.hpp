@@ -19,6 +19,7 @@
 #include <string.h>
 #include <unordered_map>
 #include <cerrno>
+#include <fcntl.h>
 
 #define FLAG_END "$|"
 #define FLAG_FRONT "|$"
@@ -34,30 +35,68 @@ public:
             std::cerr << "用户数据文件打开失败" << std::endl;
             exit(-1);
         }
+        //测试代码
+        if (_userdatafile.fail()) {
+            std::cerr << "Write operation failed1." << std::endl;
+        }
     }
     void writedata(const std::string &_nandp)
     {
+        //测试代码
+        if (_userdatafile.fail()) {
+            std::cerr << "Write operation failed4." << std::endl;
+        }
+        //测试用代码
+        if (!_userdatafile.is_open())
+        {
+            std::cerr << "用户数据文件打开失败" << std::endl;
+            exit(-1);
+        }
+        
+       
         _userdatafile.seekp(std::ios_base::end);
-        _userdatafile.write(_nandp.c_str(), strlen(_nandp.c_str()));
+        //测试代码
+        if (_userdatafile.fail()) {
+            std::cerr << "Write operation failed3." << std::endl;
+        }
+        std::string nandp= _nandp+'$';
+        //测试用代码
+        std::cout<<"我进到了writedata中"<<std::endl;
+        std::cout<<nandp<<std::endl;
+        _userdatafile.write(nandp.c_str(), strlen(nandp.c_str())+1);
+        _userdatafile.flush();
         if (_userdatafile.bad() || _userdatafile.fail())
         {
             std::cerr << "用户数据写入错误" << std::endl;
             return;
         }
-        _userdatafile.flush();
+        
     }
 
     bool found(const std::string &_nadp)
     {
+        
         _userdatafile.seekp(std::ios_base::beg);
+        if (_userdatafile.fail()) {
+            std::cerr << "Write operation failed10." << std::endl;
+        }
         while (!_userdatafile.eof())
         {
             std::string tmp;
-            std::getline(_userdatafile, tmp);
+            std::getline(_userdatafile, tmp, '$');
+            if (_userdatafile.fail()) {
+                std::cerr << "Write operation failed11." << std::endl;
+            }
+            if(tmp == "")
+                break;
             if (_nadp.find(tmp) != std::string::npos) // 优化!
                 return true;
         }
         std::cerr << "没有找到相关用户" << std::endl;
+        //测试代码
+        if (_userdatafile.fail()) {
+            std::cerr << "Write operation failed9." << std::endl;
+        }
         return false;
     }
 
@@ -90,23 +129,25 @@ public:
             std::cerr << "文件打开失败" << std::endl;
             close(-1);
         }
-        for (int i=0; !_massagetypefile.eof(); i++)
+        for (int i = 0; !_massagetypefile.eof(); i++)
         {
             std::string tmp;
-            std::getline(_massagetypefile, tmp,'$');
-            _mtmap.insert(std::pair<std::string, int>(tmp, i));
+            std::getline(_massagetypefile, tmp, '$');
+            if(!(tmp==""))
+            {
+                _mtmap.insert(std::pair<std::string, int>(tmp, i));
+            }
+            
         }
 
         _massagetypefile.close();
-        showmtmap();
-        
     }
 
-    void showmtmap ()
+    void showmtmap()
     {
-        for(auto e : _mtmap)
+        for (auto e : _mtmap)
         {
-            std::cout<<e.first<<"-"<<e.second<<std::endl;
+            std::cout << e.first << "-" << e.second << std::endl;
         }
     }
 
@@ -149,7 +190,7 @@ public:
 class server
 {
 public:
-    server(int serverport) : _serverport(serverport)
+    server(int serverport) : _serverport(serverport),_Is_listen(false)
     {
         memset(&_serveraddr, 0, sizeof(struct sockaddr_in));
         _socketfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -168,15 +209,14 @@ public:
             std::cout << strerror(errno) << std::endl;
             exit(-1);
         }
-        _rcet = new std::thread(&server::receive, this);
-        _sendt = new std::thread(&server::handlep, this);
-        _connect = new std::thread(&server::connect, this);
     }
 
     void deserialize(std::string &massage, std::vector<std::string> *massages)
     {
 
         size_t front, end, str_len;
+        // 测试用代码
+        //  int i = 0;
         str_len = strlen(FLAG_END);
         end = 0;
         while (1)
@@ -186,24 +226,32 @@ public:
             if (front == std::string::npos || end == std::string::npos)
                 break;
             massages->push_back(massage.substr(front + str_len, end - front - str_len));
+            // 测试用代码
+            //  std::cout<<(*massages)[i];
+            //  i++;
         }
     }
 
     void handle(int mt, const std::string &msg, int clientfd) // 这个clientfd是发消息过来的客户端的fd
     {
+        //测试代码
+        // std::cout<<"msg:"<<msg<<std::endl;
         switch (mt)
         {
-        case 1:
+        case 0:
             _register(msg, clientfd);
             break;
-        case 2:
+        case 1:
             _login(msg, clientfd);
             break;
-        case 4:
+        case 3:
             _broadcast(msg, clientfd);
             break;
         case 5:
+            // std::cout << "发送前 _connect_client" << std::endl;
             _connect_client(clientfd);
+            // 测试代码
+            break;
         default:
             std::cerr << "未知任务" << std::endl;
             return;
@@ -212,7 +260,7 @@ public:
 
     void _connect_client(int clientfd)
     {
-        ;
+        _send(clientfd, "|$hello client$|");
     }
 
     void _register(const std::string &_nadp, int clientfd)
@@ -220,11 +268,11 @@ public:
         if (!_ud.found(_nadp))
         {
             _ud.writedata(_nadp);
-            _send(clientfd, "/registerY \n");
+            _send(clientfd, "|$/registerY $|\n");
         }
         else
         {
-            _send(clientfd, "/registerF \n");
+            _send(clientfd, "|$/registerF $|\n");
         }
     }
 
@@ -232,11 +280,15 @@ public:
     {
         if (!_ud.found(_nadp))
         {
-            _send(clientfd, "/loginF \n");
+            _send(clientfd, "|$/loginF $|\n");
+            // 测试用代码
+            std::cout << "失败" << std::endl;
         }
         else
         {
-            _send(clientfd, "/loginY \n");
+            _send(clientfd, "|$/loginY $|\n");
+            // 测试用代码
+            std::cout << "成功" << std::endl;
             _ud._cfdandname.insert(std::pair<int, std::string>(clientfd, _ud.cutusername(_nadp))); // 这里如果要做成多线程处理的话要加锁(这里是单线程就不加了)
         }
         return;
@@ -280,59 +332,61 @@ public:
 
     void connect()
     {
-        if (listen(_socketfd, 25) == -1)
+        // 要改动的地方
+        if (_Is_listen == false)
         {
-            std::cerr << "监听失败" << std::endl;
-            std::cerr << strerror(errno) << std::endl;
-            exit(-1);
+            if (listen(_socketfd, 25) == -1)
+            {
+                std::cerr << "监听失败" << std::endl;
+                std::cerr << strerror(errno) << std::endl;
+                exit(-1);
+            }
+            int flags = fcntl(_socketfd, F_GETFL, 0);
+            fcntl(_socketfd, F_SETFL, flags | O_NONBLOCK);
+            _Is_listen = true;
         }
-        while (1)
-        {
-            struct sockaddr_in clientaddr; // to do
-            socklen_t clientaddr_len = sizeof(struct sockaddr_in);
-            std::cout << "下一步链接" << std::endl;
-            int clientfd = accept(_socketfd, (struct sockaddr *)&clientaddr, &clientaddr_len);
-            // std::cout<<"链接到了:"<<clientfd<<"--"<<clientaddr.sin_addr.s_addr<<std::endl;
-            _clientfdmutex.lock();
-            _clientfd.push_back(clientfd);
-            _clientfdmutex.unlock();
-        }
+        // fcntl控制文件描述符设置非阻塞态
+        struct sockaddr_in clientaddr;
+        socklen_t clientaddr_len = sizeof(struct sockaddr_in);
+        //测试代码
+        // std::cout<<"准备接受:"<<std::endl;
+        int clientfd = accept(_socketfd, (struct sockaddr *)&clientaddr, &clientaddr_len);
+        //测试代码
+        // std::cout<<"链接到了:"<<clientfd<<std::endl;
+        _clientfd.push_back(clientfd);
     }
 
     void receive()
     {
         char buffer[1024];
-        while (1)
+        int bufferlen;
+        auto cfd = _clientfd;
+        // _mt.showmtmap();
+        for (auto client : cfd)
         {
-            int bufferlen;
-            _clientfdmutex.lock();
-            auto cfd = _clientfd;
-            _clientfdmutex.unlock();
-            for (auto client : cfd)
+            std::vector<std::string> massages;
+            bufferlen = recv(client, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+            if (bufferlen != -1 && bufferlen != 0)
             {
-                std::vector<std::string> massages;
-                bufferlen = recv(client, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
-                if (bufferlen != -1 && bufferlen != 0)
+                std::string massage(buffer, bufferlen);
+                // 测试用代码
+                std::cout << massage << std::endl;
+                deserialize(massage, &massages);
+                for (auto msg : massages)
                 {
-                    std::string massage(buffer, bufferlen);
+                    // _mt.showmtmap();
+                    int mt = _mt.findmassagetypes(msg);
                     // 测试用代码
-                    std::cout << massage << std::endl;
-                    deserialize(massage, &massages);
-                    for (auto msg : massages)
+                    std::cout << "mt:" << mt << std::endl;
+                    if (mt == -1)
                     {
-                        // _mt.showmtmap();
-                        int mt = _mt.findmassagetypes(msg);
-                        if (mt == -1)
-                        {
-                            std::cerr << "没找到指定的命令\n"
-                                      << std::endl;
-                            continue;
-                        }
-                        Task tk(mt, msg);
-                        _taskdfdmutex.lock();
-                        _taskdclientfd.insert(std::pair<int, Task>(client, tk)); // 联系client链接和任务
-                        _taskdfdmutex.unlock();
+                        std::cerr << "没找到指定的命令\n"
+                                  << std::endl;
+                        continue;
                     }
+                    Task tk(mt, msg);
+                    // 测试代码
+                    _taskdclientfd.insert(std::pair<int, Task>(client, tk)); // 联系client链接和任务
                 }
             }
         }
@@ -340,18 +394,24 @@ public:
 
     void handlep()
     {
-        while (1)
+        // 测试用代码
+        //  std::cout<<"hello"<<std::endl;
+        //  sleep(3);
+        auto tdcfd = _taskdclientfd; // 拷贝客户端和fd直接的链接
+        if (!tdcfd.empty())
         {
-            _taskdfdmutex.lock();
-            auto tdcfd = _taskdclientfd; // 拷贝客户端和fd直接的链接
-            _taskdfdmutex.unlock();
-            if (!tdcfd.empty())
+            // 测试用代码
+            // std::cout << "我进来了" << std::endl;
+            for (auto tf : tdcfd)
             {
-                for (auto tf : tdcfd)
-                {
-                    handle(tf.second._tasknum, tf.second._taskm, tf.first);
-                }
+                // static int i_1231 = 0;
+                // 测试用代码
+                // std::cout << i_1231 << std::endl;
+                handle(tf.second._tasknum, tf.second._taskm, tf.first);
+                // sleep(1000000);
             }
+            tdcfd.clear();
+            _taskdclientfd = tdcfd;
         }
     }
 
@@ -363,17 +423,12 @@ private:
     UserData _ud;
 
 private:
-    std::thread *_rcet;
-    std::thread *_sendt;
-    std::thread *_connect;
+    bool _Is_listen;
 
 private:
     std::vector<int> _clientfd; // 管理已经建立链接的用户
 
 private:
-    std::mutex _clientfdmutex;
-    std::mutex _taskdfdmutex;
-
 private:
     std::unordered_map<int, Task> _taskdclientfd;
 };

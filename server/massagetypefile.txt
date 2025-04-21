@@ -1,0 +1,1 @@
+/register $/login $/massage $/broadcast $/loginF $/connect $$

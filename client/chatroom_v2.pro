@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    chatroom_main.cpp \
     client.cpp \
     eventFilter.cpp \
     main.cpp \
@@ -16,10 +17,14 @@ SOURCES += \
 
 HEADERS += \
     chatroom.h \
-    drapwindows.h
+    chatroom_main.h \
+    client.h \
+    drapwindows.h \
+    eventFilter_main.h
 
 FORMS += \
-    chatroom.ui
+    chatroom.ui \
+    chatroom_main.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
