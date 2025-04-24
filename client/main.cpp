@@ -7,8 +7,13 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     chatroom w;
-    // chatroom_main w2;
-    // w2.show();
-    w.show();
+
+    client* client = w.get_client();
+    chatroom_main w2(client);
+
+    w2.show();
+
+    // w.show();
+    qDebug()<<"5";
     return a.exec();
 }

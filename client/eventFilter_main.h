@@ -2,6 +2,7 @@
 #include <QEvent>
 #include <QMouseEvent>
 #include <QWidget>
+#include "my_textbrowser_recv.h"
 
 class topEventFilter:public QWidget
 {

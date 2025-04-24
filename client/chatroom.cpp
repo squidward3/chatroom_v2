@@ -10,7 +10,6 @@ chatroom::chatroom(QWidget *parent)
     , ui(new Ui::chatroom)
     ,_regex("[48-57]")
     ,_client(this)
-    ,_main(new chatroom_main)
 
 {
     ui->setupUi(this);
@@ -36,8 +35,10 @@ chatroom::chatroom(QWidget *parent)
     });
     connect(&_client,&client::enter_main,this,[&](){
         close();
+        _main->_username=ui->lineEdit_username->text().toUtf8();
         _main->show();
     });
+    // _main =new chatroom_main(&_client);
 }
 
 void chatroom::paintEvent(QPaintEvent* Event)
@@ -100,15 +101,19 @@ QByteArray chatroom::getusenameandpassword ()
 void chatroom::on_register_btn_clicked()
 {
     QByteArray content = getusenameandpassword();
-    content.insert(0,"/register ");
+
     _client._register(content);
 }
 
+client* chatroom::get_client()
+{
+    return &_client;
+}
 
 void chatroom::on_login_btn_clicked()
 {
     QByteArray content = getusenameandpassword();
-    content.insert(0,"/login ");
+
     _client._login(content);
 
 }

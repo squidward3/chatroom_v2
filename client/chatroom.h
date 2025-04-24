@@ -69,6 +69,7 @@ public:
     chatroom(QWidget *parent = nullptr);
     ~chatroom();
     void paintEvent(QPaintEvent* Event) override;
+    client* get_client();
     QByteArray getusenameandpassword ();
 
 private slots:

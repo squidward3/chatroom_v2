@@ -20,7 +20,8 @@ HEADERS += \
     chatroom_main.h \
     client.h \
     drapwindows.h \
-    eventFilter_main.h
+    eventFilter_main.h \
+    my_textbrowser_recv.h
 
 FORMS += \
     chatroom.ui \

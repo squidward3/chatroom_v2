@@ -137,6 +137,9 @@
 border-left-color: rgb(255, 255, 255);
 border-right-color: rgb(255, 255, 255);</string>
     </property>
+    <property name="placeholderText">
+     <string/>
+    </property>
    </widget>
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
@@ -179,7 +182,7 @@ background-color: skyblue;</string>
 background-color: skyblue;</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="textBrowser">
+   <widget class="my_textBrowser_recv" name="textBrowser_recv">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -191,6 +194,13 @@ background-color: skyblue;</string>
    </widget>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>my_textBrowser_recv</class>
+   <extends>QTextBrowser</extends>
+   <header>my_textbrowser_recv.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
