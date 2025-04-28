@@ -34,11 +34,16 @@ chatroom::chatroom(QWidget *parent)
         ui->login_btn->setEnabled(true);
     });
     connect(&_client,&client::enter_main,this,[&](){
-        close();
+        _main= new chatroom_main (&_client,nullptr);
         _main->_username=ui->lineEdit_username->text().toUtf8();
         _main->show();
+        close();
     });
     // _main =new chatroom_main(&_client);
+
+
+    //测试用代码
+    // _client._getmessage();
 }
 
 void chatroom::paintEvent(QPaintEvent* Event)

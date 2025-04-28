@@ -39,10 +39,12 @@ public:
         if (_userdatafile.fail()) {
             std::cerr << "Write operation failed1." << std::endl;
         }
+        _userdatafile.close();
     }
     void writedata(const std::string &_nandp)
     {
         //测试代码
+        _userdatafile.open("./Data/UserData.txt", std::ios::in | std::ios::out);
         if (_userdatafile.fail()) {
             std::cerr << "Write operation failed4." << std::endl;
         }
@@ -70,33 +72,43 @@ public:
             std::cerr << "用户数据写入错误" << std::endl;
             return;
         }
+        _userdatafile.close();
         
     }
 
     bool found(const std::string &_nadp)
     {
-        
+        _userdatafile.open("./Data/UserData.txt", std::ios::in | std::ios::out);
         _userdatafile.seekp(std::ios_base::beg);
-        if (_userdatafile.fail()) {
-            std::cerr << "Write operation failed10." << std::endl;
-        }
+        // if (_userdatafile.fail()) {
+        //     std::cerr << "Write operation failed10." << std::endl;
+        // }
         while (!_userdatafile.eof())
         {
             std::string tmp;
             std::getline(_userdatafile, tmp, '$');
-            if (_userdatafile.fail()) {
-                std::cerr << "Write operation failed11." << std::endl;
-            }
+            std::cout<<tmp<<std::endl;
+            tmp = tmp.substr(10);
+            //测试用代码
+            std::cout<<tmp<<std::endl;
+            // if (_userdatafile.fail()) {
+            //     std::cerr << "Write operation failed11." << std::endl;
+            // }
             if(tmp == "")
                 break;
             if (_nadp.find(tmp) != std::string::npos) // 优化!
+            {
+                _userdatafile.close();
                 return true;
+            }
+                
         }
         std::cerr << "没有找到相关用户" << std::endl;
         //测试代码
-        if (_userdatafile.fail()) {
-            std::cerr << "Write operation failed9." << std::endl;
-        }
+        // if (_userdatafile.fail()) {
+        //     std::cerr << "Write operation failed9." << std::endl;
+        // }
+        _userdatafile.close();
         return false;
     }
 
@@ -244,7 +256,7 @@ public:
         case 1:
             _login(msg, clientfd);
             break;
-        case 3:
+        case 2:
             _broadcast(msg, clientfd);
             break;
         case 5:
@@ -297,18 +309,22 @@ public:
     void _broadcast(const std::string &msg, int clientfd) // 暂时不支持聊天缓存也就是说新来的人无法看到之前的聊天内容
     {
         auto cfandn = _ud._cfdandname;
-        std::string dmsg = msg + "|";
+        std::string dmsg = msg;
         auto it = cfandn.find(clientfd);
         if (it == cfandn.end())
         {
             std::cerr << "没有找到用户名" << std::endl;
             return;
         }
-        dmsg += it->second;
-
+        // dmsg="|$123$|";
+        dmsg.insert(0,FLAG_FRONT);
+        dmsg.insert(dmsg.size(),FLAG_END);
         for (auto fn : cfandn)
         {
-            _send(fn.first, dmsg);
+            if(fn.first!=clientfd)
+            {
+                _send(fn.first, dmsg);
+            }   
         }
     }
 

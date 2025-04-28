@@ -71,24 +71,24 @@ void client::sendTosever(QByteArray & message)
 
 void client::_getmessage()
 {
-    _message  += _socket.readAll();
+    _message  = _socket.readAll();
     //测试用代码
-    QByteArray ms("|$/message1 awa--你好啊$|");
-    _message  = ms;
     disserialize(_message,&_messages);
      //待测试代码
+    //测试代码
+    qDebug()<<_messages;
     for(auto& message:_messages)
     {
         auto i = _orderandnum.begin();
-        qDebug()<<"2";
-        while(1)//bug
+        while(1)
         {
-            //测试代码
-            qDebug()<<"1";
+            if(i == _orderandnum.end())
+            {
+                break;
+            }
             int ret = message.indexOf(i.key(),0);
             if(ret==-1)
             {
-                if(i==_orderandnum.end()) break;
                 i++;
             }
             else if(ret!= -1)
@@ -96,14 +96,13 @@ void client::_getmessage()
                 _handle(message,i.value());
                 break;
             }
-            else if(i==_orderandnum.end())
-            {
-                break;
-            }
          }
     }
     //测试用代码
-    qDebug()<<_messages;
+    // _message.clear();
+     // qDebug()<<_messages;
+    _messages.clear();
+
 }
 
 void client::_handle(QByteArray &message,int mt)
@@ -183,20 +182,6 @@ void client::_login(QByteArray &content) //to test//to do
 
     content.insert(0,"/login ");
     sendTosever(content);
-    QMessageBox mb;
-    // mb.setWindowFlags();
-    QMetaObject::Connection cn =  connect(this,&client::enter_main,&mb,[&](){
-        qDebug()<<"1";
-        mb.close();
-    });
-    connect(&mb,&QObject::destroyed,&mb,[&](){
-        qDebug()<<"2";
-        disconnect(cn);
-    });
-    mb.setText("链接中......");
-    mb.setWindowTitle("Loding....");
-    mb.exec();
-
 }
 
 void client::_sendmessage(QByteArray &content)

@@ -26,7 +26,7 @@ chatroom_main::chatroom_main(client* client,QWidget *parent)
 
 
 
-    client->_getmessage();
+    // client->_getmessage();
 
     // QByteArray message ("/loginF 你爹 测试");
     // _client->_login(message);
